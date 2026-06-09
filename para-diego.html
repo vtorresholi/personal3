@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Diego</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --wood-dark: #3d1f07;
+    --wood-frame: #6b3f1a;
+    --wood-frame2: #8b5528;
+    --sq-light: #f0d9b5;
+    --sq-dark: #b58863;
+    --sq-sel: #f6c700;
+    --sq-hint: rgba(0,0,0,0.18);
+    --sq-cap: rgba(0,0,0,0.22);
+    --cream: #faf6ef;
+    --ink: #1a1208;
+    --ink2: #6b5540;
+    --ink3: #9c856d;
+    --gold: #b8860b;
+    --gold-light: #f5d878;
+    --hint-bg: #fff8ee;
+    --hint-border: #e8c87a;
+    --win-bg: #faf6ef;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--cream);
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 3rem;
+    gap: 0;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--ink2);
+    font-style: italic;
+  }
+
+  .divider {
+    width: 48px;
+    height: 1px;
+    background: var(--gold);
+    margin: 12px auto;
+    opacity: 0.6;
+  }
+
+  #game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  #turn-banner {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink2);
+    text-align: center;
+    min-height: 20px;
+  }
+
+  #board-outer {
+    background: var(--wood-frame);
+    border-radius: 6px;
+    padding: 10px;
+    border: 2px solid var(--wood-dark);
+    box-shadow: 0 4px 20px rgba(61,31,7,0.25);
+  }
+
+  #board-inner {
+    background: var(--wood-frame2);
+    padding: 4px;
+    border-radius: 2px;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 54px);
+    grid-template-rows: repeat(8, 54px);
+    border: 1.5px solid var(--wood-dark);
+  }
+
+  .sq {
+    width: 54px; height: 54px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: filter 0.1s;
+  }
+  .sq.light { background: var(--sq-light); }
+  .sq.dark  { background: var(--sq-dark); }
+  .sq.selected { outline: 3px solid var(--sq-sel); outline-offset: -3px; z-index: 1; }
+  .sq.hint::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: var(--sq-hint);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .sq.hint-cap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 4px solid var(--sq-cap);
+    pointer-events: none;
+  }
+  .sq .coord {
+    position: absolute;
+    font-size: 9px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .sq .coord.file { bottom: 2px; right: 3px; }
+  .sq .coord.rank { top: 2px; left: 3px; }
+  .sq.light .coord { color: var(--sq-dark); }
+  .sq.dark  .coord { color: var(--sq-light); }
+
+  #hint-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .hint-card {
+    background: var(--hint-bg);
+    border: 1px solid var(--hint-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--ink2);
+    display: none;
+    line-height: 1.6;
+  }
+  .hint-card.visible { display: block; }
+  .hint-card strong { color: var(--gold); font-weight: 500; }
+
+  #hint-btn-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hint-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--hint-border);
+    background: var(--hint-bg);
+    color: var(--ink2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .hint-btn:hover { background: var(--gold-light); color: var(--ink); }
+  .hint-btn:disabled { opacity: 0.4; cursor: default; }
+
+  #reset-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 18px;
+    border-radius: 20px;
+    border: 1px solid #c9b89a;
+    background: transparent;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #reset-btn:hover { background: #ede5d8; }
+
+  #move-counter {
+    font-size: 12px;
+    color: var(--ink3);
+    text-align: center;
+  }
+
+  #win-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    background: var(--win-bg);
+    border: 1px solid var(--hint-border);
+    border-radius: 12px;
+    max-width: 420px;
+    width: 100%;
+    animation: fadeIn 0.5s ease;
+  }
+  #win-screen.show { display: flex; }
+
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .win-crown {
+    font-size: 52px;
+    line-height: 1;
+  }
+
+  .win-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .win-message {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    color: var(--ink2);
+    line-height: 1.75;
+    font-style: italic;
+    border-left: 2px solid var(--gold);
+    padding-left: 14px;
+    text-align: left;
+  }
+
+  .win-from {
+    font-size: 12px;
+    color: var(--ink3);
+    letter-spacing: 0.05em;
+  }
+
+  .win-replay {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 22px;
+    border-radius: 20px;
+    border: 1px solid var(--hint-border);
+    background: transparent;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .win-replay:hover { background: var(--gold-light); }
+
+  @media (max-width: 500px) {
+    #board { grid-template-columns: repeat(8,40px); grid-template-rows: repeat(8,40px); }
+    .sq { width:40px; height:40px; font-size:24px; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Un pequeño detalle</p>
+  <h1>Para Diego</h1>
+  <div class="divider"></div>
+  <p class="subtitle">Mate en 3 movimientos — si puedes encontrarlos</p>
+</header>
+
+<div id="game-area">
+  <div id="turn-banner">Turno de las negras &mdash; encuentra el jaque mate</div>
+
+  <div id="board-outer">
+    <div id="board-inner">
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <div id="move-counter">Movimiento 1 de 3</div>
+
+  <div id="hint-area">
+    <div id="hint-btn-row">
+      <button class="hint-btn" id="h1btn" onclick="showHint(1)">Pista 1</button>
+      <button class="hint-btn" id="h2btn" onclick="showHint(2)" disabled>Pista 2</button>
+      <button class="hint-btn" id="h3btn" onclick="showHint(3)" disabled>Pista 3</button>
+    </div>
+    <div class="hint-card" id="hint1">
+      <strong>Pista 1:</strong> La dama negra es tu arma principal. Mira si puede atacar al rey desde una diagonal poderosa — el rey blanco tiene pocas casillas de escape.
+    </div>
+    <div class="hint-card" id="hint2">
+      <strong>Pista 2:</strong> Mueve la dama a <strong>h4</strong> (esquina derecha, fila 5 desde abajo). Eso da jaque al rey y lo obliga a moverse.
+    </div>
+    <div class="hint-card" id="hint3">
+      <strong>Pista 3:</strong> Secuencia completa: <strong>Dama a h4+</strong> → el rey va a e2 → <strong>Dama a f2+</strong> → el rey va a d3 → <strong>Dama a d4#</strong>. ¡Jaque mate!
+    </div>
+  </div>
+
+  <button id="reset-btn" onclick="resetGame()">Reiniciar puzzle</button>
+</div>
+
+<div id="win-screen">
+  <div class="win-crown">&#9813;</div>
+  <div class="win-title">Jaque mate, Diego</div>
+  <div class="win-message">
+    El pr&oacute;ximo partido de ajedrez lo gano yo!<br><br>
+    Gracias por hacerme feliz siempre :b
+  </div>
+  <div class="win-from">&mdash; con mucho cari&ntilde;o &hearts;</div>
+  <button class="win-replay" onclick="resetGame()">Jugar de nuevo</button>
+</div>
+
+<script>
+const E=0,WK=1,WQ=2,WR=3,WB=4,WN=5,WP=6,BK=7,BQ=8,BR=9,BB=10,BN=11,BP=12;
+const G={[WK]:'♔',[WQ]:'♕',[WR]:'♖',[WB]:'♗',[WN]:'♘',[WP]:'♙',[BK]:'♚',[BQ]:'♛',[BR]:'♜',[BB]:'♝',[BN]:'♞',[BP]:'♟'};
+const isW=p=>p>=1&&p<=6, isB=p=>p>=7&&p<=12;
+
+/*
+  Puzzle: Mate in 3 for Black
+  Position:
+  Black: Kd8, Qd6, Re8
+  White: Ke1, Pg2, Ph2, Pb2, Pa2
+
+  Solution: Qh4+ Ke2 Qf2+ Kd3 Qd4#
+
+  Board layout (row 0 = rank 8, row 7 = rank 1):
+  row0: . . . BK . . . .
+  row1: . . . . . . . .
+  row2: . . . BQ . . . .
+  row3: . . . . . . . .
+  row4: . . . . . . . .
+  row5: . . . . . . . .
+  row6: WP WP . . . . WP WP
+  row7: . . . . WK . . .
+*/
+
+let board, selected, validMoves, moveCount, gameOver, playerTurn;
+let hintsShown = 0;
+
+function mkBoard(){
+  const b=Array(64).fill(0);
+  b[0*8+3]=BK;
+  b[2*8+3]=BQ;
+  b[4*8+4]=BR;
+  b[6*8+0]=WP; b[6*8+1]=WP; b[6*8+6]=WP; b[6*8+7]=WP;
+  b[7*8+4]=WK;
+  return b;
+}
+
+function getMoves(b,idx){
+  const p=b[idx]; if(!p)return[];
+  const row=Math.floor(idx/8),col=idx%8;
+  const moves=[];
+  const add=(r,c)=>{if(r>=0&&r<8&&c>=0&&c<8){const t=b[r*8+c];if(t===0||(isB(p)&&isW(t))||(isW(p)&&isB(t)))moves.push(r*8+c);}};
+  const slide=(dr,dc)=>{let r=row+dr,c=col+dc;while(r>=0&&r<8&&c>=0&&c<8){const t=b[r*8+c];if(t===0){moves.push(r*8+c);r+=dr;c+=dc;}else{if((isB(p)&&isW(t))||(isW(p)&&isB(t)))moves.push(r*8+c);break;}}};
+  if(p===WK||p===BK){for(let a=-1;a<=1;a++)for(let d=-1;d<=1;d++)if(a||d)add(row+a,col+d);}
+  else if(p===WQ||p===BQ){[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,d])=>slide(a,d));}
+  else if(p===WR||p===BR){[[1,0],[-1,0],[0,1],[0,-1]].forEach(([a,d])=>slide(a,d));}
+  else if(p===WB||p===BB){[[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,d])=>slide(a,d));}
+  else if(p===WN||p===BN){[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([a,d])=>add(row+a,col+d));}
+  else if(p===WP){if(row>0&&b[(row-1)*8+col]===0)moves.push((row-1)*8+col);if(row===6&&b[5*8+col]===0&&b[4*8+col]===0)moves.push(4*8+col);[-1,1].forEach(dc=>{if(col+dc>=0&&col+dc<8&&row>0&&isB(b[(row-1)*8+col+dc]))moves.push((row-1)*8+col+dc);});}
+  else if(p===BP){if(row<7&&b[(row+1)*8+col]===0)moves.push((row+1)*8+col);if(row===1&&b[2*8+col]===0&&b[3*8+col]===0)moves.push(3*8+col);[-1,1].forEach(dc=>{if(col+dc>=0&&col+dc<8&&row<7&&isW(b[(row+1)*8+col+dc]))moves.push((row+1)*8+col+dc);});}
+  return moves;
+}
+
+function isSquareAttackedByBlack(b,idx){
+  for(let i=0;i<64;i++){if(isB(b[i])){if(getMoves(b,i).includes(idx))return true;}}
+  return false;
+}
+
+function aiMove(){
+  // White king runs away from check — tries to find a safe square
+  const kingIdx=board.findIndex(p=>p===WK);
+  if(kingIdx<0)return;
+  const opts=getMoves(board,kingIdx);
+  // prefer safe squares
+  const safe=opts.filter(t=>{
+    const tb=[...board]; tb[t]=WK; tb[kingIdx]=0;
+    return !isSquareAttackedByBlack(tb,t);
+  });
+  const choices=safe.length?safe:opts;
+  if(!choices.length)return;
+  const to=choices[Math.floor(Math.random()*choices.length)];
+  board[to]=WK; board[kingIdx]=0;
+}
+
+function isCheckmate(){
+  const kingIdx=board.findIndex(p=>p===WK);
+  if(kingIdx<0){triggerWin();return true;}
+  if(!isSquareAttackedByBlack(board,kingIdx))return false;
+  // king has no safe move
+  const moves=getMoves(board,kingIdx);
+  const canEscape=moves.some(t=>{
+    const tb=[...board];tb[t]=WK;tb[kingIdx]=0;
+    return !isSquareAttackedByBlack(tb,t);
+  });
+  if(!canEscape){triggerWin();return true;}
+  return false;
+}
+
+function handleClick(idx){
+  if(gameOver||!playerTurn)return;
+  const p=board[idx];
+  if(selected===null){
+    if(isB(p)){selected=idx;validMoves=getMoves(board,idx);}
+  } else {
+    if(validMoves.includes(idx)){
+      board[idx]=board[selected];board[selected]=0;
+      selected=null;validMoves=[];
+      moveCount++;
+      if(isCheckmate()){render();return;}
+      playerTurn=false;
+      render();
+      setTimeout(()=>{
+        aiMove();
+        playerTurn=true;
+        render();
+      },400);
+    } else if(isB(p)){
+      selected=idx;validMoves=getMoves(board,idx);
+    } else {
+      selected=null;validMoves=[];
+    }
+  }
+  render();
+}
+
+function triggerWin(){
+  gameOver=true;
+  setTimeout(()=>{
+    document.getElementById('game-area').style.display='none';
+    document.getElementById('win-screen').classList.add('show');
+  },300);
+}
+
+function showHint(n){
+  hintsShown=Math.max(hintsShown,n);
+  for(let i=1;i<=3;i++){
+    const c=document.getElementById('hint'+i);
+    if(i<=hintsShown)c.classList.add('visible');
+    else c.classList.remove('visible');
+  }
+  if(n<3)document.getElementById('h'+(n+1)+'btn').disabled=false;
+}
+
+const files=['a','b','c','d','e','f','g','h'];
+const ranks=['8','7','6','5','4','3','2','1'];
+
+function render(){
+  const el=document.getElementById('board');
+  el.innerHTML='';
+  for(let i=0;i<64;i++){
+    const r=Math.floor(i/8),c=i%8;
+    const sq=document.createElement('div');
+    sq.className='sq '+((r+c)%2===0?'light':'dark');
+    if(selected===i)sq.classList.add('selected');
+    if(validMoves.includes(i)){
+      if(board[i]&&isW(board[i]))sq.classList.add('hint-cap');
+      else sq.classList.add('hint');
+    }
+    if(board[i])sq.textContent=G[board[i]];
+    // coords on border squares
+    if(c===7){const s=document.createElement('span');s.className='coord rank';s.textContent=ranks[r];sq.appendChild(s);}
+    if(r===7){const s=document.createElement('span');s.className='coord file';s.textContent=files[c];sq.appendChild(s);}
+    sq.onclick=()=>handleClick(i);
+    el.appendChild(sq);
+  }
+  const mc=document.getElementById('move-counter');
+  const tb=document.getElementById('turn-banner');
+  if(!gameOver){
+    const m=Math.min(moveCount,3);
+    mc.textContent='Movimiento '+(m<3?m+1:3)+' de 3';
+    if(!playerTurn) tb.textContent='Las blancas piensan su respuesta...';
+    else if(moveCount===0) tb.textContent='Turno de las negras — encuentra el jaque mate';
+    else tb.textContent='Bien! Sigue la secuencia...';
+  }
+}
+
+function resetGame(){
+  document.getElementById('game-area').style.display='flex';
+  document.getElementById('win-screen').classList.remove('show');
+  board=mkBoard(); selected=null; validMoves=[]; moveCount=0; gameOver=false; playerTurn=true;
+  hintsShown=0;
+  for(let i=1;i<=3;i++){
+    document.getElementById('hint'+i).classList.remove('visible');
+    document.getElementById('h'+i+'btn').disabled=(i>1);
+  }
+  render();
+}
+
+resetGame();
+</script>
+</body>
+</html>
